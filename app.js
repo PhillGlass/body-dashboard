@@ -77,46 +77,48 @@ function rowToMeasure(r) {
 }
 
 async function loadUserData() {
-  const [{ data: profileRow }, { data: measureRows }, { data: goalRow }] =
-    await Promise.all([
-      supabaseClient.from("profiles").select("*").eq("user_id", currentUser.id).maybeSingle(),
-      supabaseClient.from("measurements").select("*").eq("user_id", currentUser.id),
-      supabaseClient.from("goals").select("*").eq("user_id", currentUser.id).maybeSingle(),
-    ]);
+  const [profileRes, measureRes, goalRes] = await Promise.all([
+    supabaseClient.from("profiles").select("*").eq("user_id", currentUser.id).maybeSingle(),
+    supabaseClient.from("measurements").select("*").eq("user_id", currentUser.id),
+    supabaseClient.from("goals").select("*").eq("user_id", currentUser.id).maybeSingle(),
+  ]);
 
-  state.profile = profileRow
+  // Se una qualsiasi lettura fallisce (es. rete instabile), NON tocchiamo
+  // mai i dati salvati: mostriamo un avviso e usciamo, senza generare o
+  // sovrascrivere nulla. Meglio un'app vuota momentaneamente che perdere dati.
+  if (profileRes.error || measureRes.error || goalRes.error) {
+    showToast("Errore di connessione: riprova a ricaricare la pagina", "error");
+    return false;
+  }
+
+  state.profile = profileRes.data
     ? {
-        birthYear: profileRow.birth_year,
-        height: profileRow.height,
-        sex: profileRow.sex,
-        activityLevel: profileRow.activity_level,
+        birthYear: profileRes.data.birth_year,
+        height: profileRes.data.height,
+        sex: profileRes.data.sex,
+        activityLevel: profileRes.data.activity_level,
       }
     : { ...DEFAULT_PROFILE };
 
-  state.measurements = (measureRows || []).map(rowToMeasure);
+  state.measurements = (measureRes.data || []).map(rowToMeasure);
 
-  state.goal = goalRow
+  state.goal = goalRes.data
     ? {
-        targetWeight: goalRow.target_weight,
-        focus: goalRow.focus,
-        startWeight: goalRow.start_weight,
-        startDate: goalRow.start_date,
-        projectedEndDate: goalRow.projected_end_date,
-        weeklyRate: goalRow.weekly_rate,
-        dailyDeficit: goalRow.daily_deficit,
-        setAt: goalRow.set_at,
+        targetWeight: goalRes.data.target_weight,
+        focus: goalRes.data.focus,
+        startWeight: goalRes.data.start_weight,
+        startDate: goalRes.data.start_date,
+        projectedEndDate: goalRes.data.projected_end_date,
+        weeklyRate: goalRes.data.weekly_rate,
+        dailyDeficit: goalRes.data.daily_deficit,
+        setAt: goalRes.data.set_at,
       }
     : null;
 
-  // Primo accesso: nessun dato ancora presente → genera dati di esempio
-  if (state.measurements.length === 0) {
-    state.measurements = generateSampleData();
-    await saveMeasurements();
-    if (state.goal === null) {
-      state.goal = generateSampleGoal(state.measurements);
-      await saveGoal();
-    }
-  }
+  // Nessuna generazione automatica di dati di esempio: se non hai ancora
+  // misurazioni, l'app parte semplicemente vuota, in attesa che tu ne
+  // aggiunga una o importi un JSON.
+  return true;
 }
 
 /* ─── PLUGIN: testo centrale donut su canvas ── */
@@ -1595,7 +1597,13 @@ async function bootstrapAuth() {
 async function enterApp(user) {
   currentUser = user;
   el("auth-overlay").classList.add("hidden");
-  await loadUserData();
+  const ok = await loadUserData();
+  if (!ok) {
+    // Caricamento fallito: mostriamo di nuovo il login/overlay invece di
+    // avviare l'app con dati incompleti, per evitare di salvare stati errati.
+    el("auth-overlay").classList.remove("hidden");
+    return;
+  }
   initApp();
 }
 
