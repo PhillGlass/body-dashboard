@@ -1742,18 +1742,32 @@ function renderGoalModeChart() {
   const projStart = new Date(goal.startDate + 'T12:00:00');
   const totalDays = Math.ceil((projEnd - projStart) / 86400000);
   const totalLoss = goal.startWeight - goal.targetWeight;
+
+  // Se hai continuato a inserire misurazioni oltre la data prevista di
+  // traguardo, espandiamo il range del grafico fino all'ultima misurazione
+  // disponibile, invece di tagliarlo alla data prevista.
+  const lastActualDate = actual.length
+    ? new Date(actual[actual.length - 1].date + 'T12:00:00')
+    : projStart;
+  const effectiveEnd = lastActualDate > projEnd ? lastActualDate : projEnd;
+  const effectiveEndStr = effectiveEnd.toISOString().slice(0, 10);
+
   // Proiezione adattativa (Hall et al. 2012):
-  // peso(t) = target + (start - target) * (1 - t/T)^0.85
-  // Esponente 0.85 = calo più rapido all'inizio, decelerazione verso il traguardo
-  // Simula l'adattamento metabolico: BMR scende con il peso, rallentando la perdita
+  // peso(t) = target + (start - target) * (1 - t/T)^1.4
+  // Esponente > 1 = decelerazione: calo più marcato all'inizio (acqua/glicogeno),
+  // via via più graduale verso il traguardo per adattamento metabolico (BMR che scende col peso)
   const proj = [];
   const steps = Math.max(1, Math.floor(totalDays / 60));
   for (let day = 0; day <= totalDays; day += steps) {
     const d = new Date(projStart); d.setDate(d.getDate() + day);
-    const factor = Math.pow(1 - day / totalDays, 0.85);
+    const factor = Math.pow(1 - day / totalDays, 1.4);
     proj.push({ x: d.toISOString().slice(0,10), y: parseFloat((goal.targetWeight + totalLoss * factor).toFixed(2)) });
   }
   proj.push({ x: goal.projectedEndDate, y: goal.targetWeight });
+  // Oltre la data prevista, la proiezione prosegue piatta sul peso obiettivo
+  if (effectiveEnd > projEnd) {
+    proj.push({ x: effectiveEndStr, y: goal.targetWeight });
+  }
   const c = cc(), ctx = el('chart-weight').getContext('2d');
   const H = el('wrap-weight').offsetHeight || 280;
   const grad = mkGrad(ctx, H, 59, 130, 246);
@@ -1782,7 +1796,7 @@ function renderGoalModeChart() {
         },
         {
           label: `Obiettivo: ${goal.targetWeight} kg`,
-          data: [{ x:goal.startDate, y:goal.targetWeight }, { x:goal.projectedEndDate, y:goal.targetWeight }],
+          data: [{ x:goal.startDate, y:goal.targetWeight }, { x:effectiveEndStr, y:goal.targetWeight }],
           borderColor: '#22c55e66', backgroundColor:'transparent',
           borderWidth: 1.5, borderDash:[4,4], pointRadius:0,
           fill: false, order:3,
@@ -1804,7 +1818,7 @@ function renderGoalModeChart() {
       },
       scales:{
         x:{ type:'time', time:{unit:'week', displayFormats:{week:'dd/MM',month:"MMM ''yy"}},
-          min: goal.startDate, max: goal.projectedEndDate,
+          min: goal.startDate, max: effectiveEndStr,
           grid:{color:c.grid,drawTicks:false}, ticks:{color:c.tick,font:{family:"'JetBrains Mono'",size:10},maxRotation:0}, border:{display:false} },
         y:{ min:yMin, max:yMax, grid:{color:c.grid},
           ticks:{color:c.tick,font:{family:"'JetBrains Mono'",size:10},callback:v=>v+' kg'}, border:{display:false} }
