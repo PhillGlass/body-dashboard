@@ -1575,6 +1575,31 @@ function initApp() {
     await supabaseClient.auth.signOut();
     location.reload();
   });
+
+  /* ─── HAMBURGER MENU (mobile verticale) ─── */
+  const menuToggle = el('btn-menu-toggle');
+  const headerActions = el('header-actions');
+  if (menuToggle && headerActions) {
+    menuToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      headerActions.classList.toggle('open');
+    });
+    // chiudi il menu dopo aver scelto una voce
+    headerActions.querySelectorAll('.btn-header').forEach((btn) => {
+      btn.addEventListener('click', () => headerActions.classList.remove('open'));
+    });
+    // chiudi il menu cliccando fuori
+    document.addEventListener('click', (e) => {
+      if (
+        headerActions.classList.contains('open') &&
+        !headerActions.contains(e.target) &&
+        e.target !== menuToggle &&
+        !menuToggle.contains(e.target)
+      ) {
+        headerActions.classList.remove('open');
+      }
+    });
+  }
 }
 
 /* ═══════════════════════════════════════════════

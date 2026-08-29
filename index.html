@@ -64,39 +64,48 @@
                 <div class="profile-badge" id="profile-badge"></div>
             </div>
             <div class="header-right">
-                <button class="btn-header" id="btn-profile">
-                    <i class="fas fa-user-cog"></i><span>Profilo</span>
-                </button>
-                <label
-                    class="btn-header"
-                    for="import-file"
-                    style="cursor: pointer"
-                >
-                    <i class="fas fa-file-import"></i><span>Importa</span>
-                    <input
-                        type="file"
-                        id="import-file"
-                        accept=".json"
-                        style="display: none"
-                    />
-                </label>
-                <button class="btn-header" id="btn-export">
-                    <i class="fas fa-file-export"></i><span>Esporta</span>
-                </button>
                 <button
                     class="btn-header btn-icon-only"
-                    id="btn-theme"
-                    title="Cambia tema"
+                    id="btn-menu-toggle"
+                    aria-label="Apri menu"
                 >
-                    <i class="fas fa-moon"></i>
+                    <i class="fas fa-bars"></i>
                 </button>
-                <button
-                    class="btn-header btn-icon-only"
-                    id="btn-logout"
-                    title="Esci"
-                >
-                    <i class="fas fa-right-from-bracket"></i>
-                </button>
+                <div class="header-actions" id="header-actions">
+                    <button class="btn-header" id="btn-profile">
+                        <i class="fas fa-user-cog"></i><span>Profilo</span>
+                    </button>
+                    <label
+                        class="btn-header"
+                        for="import-file"
+                        style="cursor: pointer"
+                    >
+                        <i class="fas fa-file-import"></i><span>Importa</span>
+                        <input
+                            type="file"
+                            id="import-file"
+                            accept=".json"
+                            style="display: none"
+                        />
+                    </label>
+                    <button class="btn-header" id="btn-export">
+                        <i class="fas fa-file-export"></i><span>Esporta</span>
+                    </button>
+                    <button
+                        class="btn-header btn-icon-only"
+                        id="btn-theme"
+                        title="Cambia tema"
+                    >
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button
+                        class="btn-header btn-icon-only"
+                        id="btn-logout"
+                        title="Esci"
+                    >
+                        <i class="fas fa-right-from-bracket"></i>
+                    </button>
+                </div>
             </div>
         </header>
 
